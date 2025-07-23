@@ -1,15 +1,25 @@
 import datetime
 import tkinter as tk
 import tkinter.ttk as ttk
+import sqlite3
+# conn = sqlite3.connect()
 
 #メニューボタン押したときの動作
 def add_menu():
     frame_s.pack()
+def add():
+    entry_sj.get()
+    entry_month.get()
+    entry_day.get()
+    #データベースに送るコードを追加してください
 def top_menu():
-    frame_s.place_forget()
-# def list_menu():
-
+    frame_s.pack_forget()
+def list_menu():
+    frame_list.pack(fill=tk.BOTH,expand=True)
+    # conn = sqlite3.connect("")
+    # cur = conn.execute(f"")
 # def remove_menu():
+#     frame_.pack()
 
 root = tk.Tk()
 root.title("python製 ToDoリスト")
@@ -49,16 +59,13 @@ entry_day = ttk.Combobox(frame_s)
 entry_day["values"]=("00","01","02","03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29","30","31")
 entry_day.current(0)
 entry_day.pack()
-btn_add = tk.Button(frame_s,text="追加")
+btn_add = tk.Button(frame_s,text="追加",command=add)
 btn_add.pack()
 
 
-
-
-
-
-
-
+frame_list = tk.Frame(root)
+canvas=display_list=tk.Canvas(frame_list)
+canvas.pack(side=tk.LEFT,fill=tk.BOTH,expand=True)
 
 
 root.mainloop()
