@@ -27,6 +27,7 @@ def initialize_database():
 def add_menu():
     frame_s.pack()
     frame_list.pack_forget()
+    frame_delete.pack_forget()
 def add():
     task=entry_sj.get().strip()
     year=entry_year.get().strip()
@@ -34,24 +35,28 @@ def add():
     day=entry_day.get().strip()
     date=datetime.datetime.strptime(f"{year}/{month}/{day}",'%Y/%m/%d').date()
     created_date=datetime.datetime.now().date()
-    try:
-        conn.execute("INSERT INTO todo (task,due_date,created_date) values(?,?,?)",(task, date.isoformat(), created_date.isoformat()))
-        conn.commit()
-    except:
-        if conn:
-            conn.rollback()
-        tkinter.messagebox.showerror("タスクの追加", "失敗しました")
+    if date<created_date:
+        tkinter.messagebox.showerror("日付の入力","期限の入力が不正です。")
     else:
-        entry_sj.delete(0, tk.END)
-        entry_year.delete(0, tk.END)
-        entry_month.set()
-        entry_day.set()
-        tkinter.messagebox.showinfo("タスクの追加", "成功しました")
+        try:
+            conn.execute("INSERT INTO todo (task,due_date,created_date) values(?,?,?)",(task, date.isoformat(), created_date.isoformat()))
+            conn.commit()
+        except:
+            if conn:
+                conn.rollback()
+            tkinter.messagebox.showerror("タスクの追加", "失敗しました")
+        else:
+            entry_sj.delete(0, tk.END)
+            entry_year.delete(0, tk.END)
+            entry_month.set("01")
+            entry_day.set("01")
+            tkinter.messagebox.showinfo("タスクの追加", "成功しました")
 #<---↑----追加の動作----↑---＞
 
 #<----↓---トップの動き----↓---＞
 def top_menu():
     frame_s.pack_forget()
+    frame_delete.pack_forget()
     frame_list.pack_forget()
 #<------↑トップの動き↑------＞
 
@@ -59,6 +64,7 @@ def top_menu():
 def display_list():
     frame_list.pack_forget()
     frame_s.pack_forget()
+    frame_delete.pack_forget()
     frame_list.pack(expand=True, fill='both')
     sort_option = serect_sort.get()
 
@@ -66,11 +72,7 @@ def display_list():
     for item in tree.get_children():
         tree.delete(item)
     query = "SELECT id, task, due_date FROM todo" 
-    if sort_option == "追加古い":
-        query += " ORDER BY created_date ASC"
-    elif sort_option == "新規追加順": 
-                query += " ORDER BY id DESC"
-    elif sort_option == "期日が近い":
+    if sort_option == "期日が近い":
         query += " ORDER BY due_date ASC" # 期日が近い順はASCが正しい
     elif sort_option == "期日が遠い":
         query += " ORDER BY due_date DESC"    
@@ -84,9 +86,16 @@ def display_list():
             tree.insert("", "end", values=(i,row[1], row[2]))
     except sqlite3.Error as e:
         tkinter.messagebox.showerror("データ取得エラー", f"データベースからのデータ取得に失敗しました: {e}")
-
-
 #<---↑一覧表示の動き↑---＞
+
+#<--↓-削除-↓-->
+# def delete():
+    
+def delete_menu():
+    display_list()
+    frame_delete.pack()
+    
+#<↑--削除---↑>
 
 #<---↓---見栄え---↓--->
 root.title("python製 ToDoリスト")
@@ -110,7 +119,7 @@ btn2.grid(row=1,column=1,padx=5,pady=10)
 btn3 = tk.Button(frame_m,text=u"一覧表示",command=display_list)
 btn3.grid(row=1,column=2,padx=5,pady=10)
 
-btn4  = tk.Button(frame_m,text=u"削除")
+btn4  = tk.Button(frame_m,text=u"削除",command=delete_menu)
 btn4.grid(row=1,column=3,padx=5,pady=10)
 
 #描画画面(メニューボタン押したら切り替わるように)
@@ -155,14 +164,20 @@ tree.column("num",width=60,anchor="center")
 tree.column("task",width=150)
 tree.column("kijitu",width=80,anchor="e")
 
-    
-
 scrollbar = ttk.Scrollbar(frame_list,orient="vertical",command=tree.yview)
 tree.configure(yscrollcommand=scrollbar.set)
 tree.grid(row=1,column=0,sticky="nsew")
 scrollbar.grid(row=1,column=1,sticky="ns")
 frame_list.grid_rowconfigure(0,weight=1)
 frame_list.grid_columnconfigure(0,weight=1)
+
+#削除画面
+frame_delete = ttk.Frame(all_frame, padding=10)
+entry_num = tk.Entry(frame_delete)
+entry_num.grid(row=0, column=0, pady=0,sticky="e")
+del_btn = tk.Button(frame_delete,text=u"削除")
+del_btn.grid(row=0, column=0, pady=0,sticky="e")
+"""IDの情報自体はh画面には出てないけど持ってきてる、選択させて、その隠れたIDをもとにDBのほうはいじらせよう"""
 
 initialize_database()
 root.mainloop()
