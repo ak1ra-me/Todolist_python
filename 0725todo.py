@@ -44,13 +44,13 @@ def add():
         except:
             if conn:
                 conn.rollback()
-            tkinter.messagebox.showerror("タスクの追加", "失敗しました")
+            tkinter.messagebox.showerror("タスク追加失敗", "失敗しました")
         else:
             entry_sj.delete(0, tk.END)
             entry_year.delete(0, tk.END)
             entry_month.set("01")
             entry_day.set("01")
-            tkinter.messagebox.showinfo("タスクの追加", "成功しました")
+            tkinter.messagebox.showinfo("タスク追加成功", "成功しました")
 #<---↑----追加の動作----↑---＞
 
 #<----↓---トップの動き----↓---＞
@@ -66,16 +66,19 @@ def display_list():
     frame_s.pack_forget()
     frame_delete.pack_forget()
     frame_list.pack(expand=True, fill='both')
-    sort_option = serect_sort.get()
 
+    sort()
+def sort():
+    
     # Treeviewの既存データをすべてクリア
     for item in tree.get_children():
         tree.delete(item)
+    sort_option = serect_sort.get()
     query = "SELECT id, task, due_date FROM todo" 
     if sort_option == "期日が近い":
         query += " ORDER BY due_date ASC" # 期日が近い順はASCが正しい
     elif sort_option == "期日が遠い":
-        query += " ORDER BY due_date DESC"    
+        query += " ORDER BY due_date DESC"
     else:
         query += " ORDER BY due_date ASC" 
     try:
@@ -83,7 +86,7 @@ def display_list():
         i=0
         for row in cur.fetchall():
             i+=1
-            tree.insert("", "end", values=(i,row[1], row[2]))
+            tree.insert("", "end",iid=row[0],values=(i,row[1], row[2]))
     except sqlite3.Error as e:
         tkinter.messagebox.showerror("データ取得エラー", f"データベースからのデータ取得に失敗しました: {e}")
 #<---↑一覧表示の動き↑---＞
@@ -95,6 +98,20 @@ def delete_menu():
     display_list()
     frame_delete.pack()
     
+def delete():
+    select_i = tree.selection()
+    for i in select_i:
+        record_id = i
+    try:
+        conn.execute("DELETE FROM todo WHERE id = ?", (record_id,))
+        conn.commit()
+    except:
+        tkinter.messagebox.showerror("削除の失敗", f"削除できなかった")
+        conn.rollback()
+    else:
+        tkinter.messagebox.showerror("削除成功", f"削除しました")
+        display_list()
+        frame_delete.pack()
 #<↑--削除---↑>
 
 #<---↓---見栄え---↓--->
@@ -152,7 +169,7 @@ serect_sort = ttk.Combobox(frame_list)
 serect_sort["values"] = ("---","期日が近い","期日が遠い")
 serect_sort.current(0)
 serect_sort.grid(row=0, column=0, pady=0, sticky="e")
-sort_btn = tk.Button(frame_list,text="並び替え",command=display_list)
+sort_btn = tk.Button(frame_list,text="並び替え",command=sort)
 sort_btn.grid(row=0, column=1, pady=0, sticky="e")
 
 columns = ("num","task","kijitu")
@@ -173,9 +190,9 @@ frame_list.grid_columnconfigure(0,weight=1)
 
 #削除画面
 frame_delete = ttk.Frame(all_frame, padding=10)
-entry_num = tk.Entry(frame_delete)
-entry_num.grid(row=0, column=0, pady=0,sticky="e")
-del_btn = tk.Button(frame_delete,text=u"削除")
+# entry_num = tk.Entry(frame_delete)
+# entry_num.grid(row=0, column=0, pady=0,sticky="e")
+del_btn = tk.Button(frame_delete,text=u"削除",command=delete)
 del_btn.grid(row=0, column=0, pady=0,sticky="e")
 """IDの情報自体はh画面には出てないけど持ってきてる、選択させて、その隠れたIDをもとにDBのほうはいじらせよう"""
 
