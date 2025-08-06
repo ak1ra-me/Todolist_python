@@ -3,6 +3,8 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.messagebox
 import sqlite3
+from tkcalendar import Calendar
+
 root = tk.Tk()
 
 #<----↓----初起動時の動作---↓---＞
@@ -28,6 +30,15 @@ def add_menu():
     frame_s.pack()
     frame_list.pack_forget()
     frame_delete.pack_forget()
+
+def date_select_calender(event):
+    select_d_str=calen.get_date()
+    print(select_d_str)
+    select_y,select_m,select_d = select_d_str.split("/")
+    entry_year.set(select_y)
+    entry_month.set(select_m)
+    entry_day.set(select_d)
+
 def add():
     task=entry_sj.get().strip()
     year=entry_year.get().strip()
@@ -142,25 +153,48 @@ btn4.grid(row=1,column=3,padx=5,pady=10)
 #描画画面(メニューボタン押したら切り替わるように)
 
 #追加画面
-frame_s = tk.Frame(all_frame)
+frame_s = ttk.Frame(all_frame,padding=10)
+
 sj = tk.Label(frame_s,text="内容")
-sj.pack()
+sj.grid(row=0, column=1, pady=5)
+
 entry_sj = tk.Entry(frame_s)
-entry_sj.pack()
+entry_sj["width"] = 40
+entry_sj.grid(row=1, column=1, pady=5)
+
 date = tk.Label(frame_s,text="期限")
-date.pack()
-entry_year = tk.Entry(frame_s) 
-entry_year.pack()
-entry_month = ttk.Combobox(frame_s)
-entry_month["values"]=("01","02","03","04","05","06","07","08","09","10","11","12")
+date.grid(row=2, column=1, pady=5)
+
+frame_daytime = ttk.Frame(frame_s,padding=10)
+frame_daytime.grid(row=3, column=1, pady=0)
+
+entry_year = ttk.Combobox(frame_daytime)
+entry_year_val=list(map(str,range(2025,3000)))
+entry_year_val.insert(0,"-")
+entry_year["width"] = 4
+entry_year["values"]=entry_year_val
+entry_year.current(0)
+entry_year.grid(row=0, column=1)
+
+entry_month = ttk.Combobox(frame_daytime)
+entry_month["width"] = 2
+entry_month["values"]=("-","01","02","03","04","05","06","07","08","09","10","11","12")
 entry_month.current(0)
-entry_month.pack()
-entry_day = ttk.Combobox(frame_s)
-entry_day["values"]=("01","02","03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29","30","31")
+entry_month.grid(row=0, column=2)
+
+entry_day = ttk.Combobox(frame_daytime)
+entry_day["width"] = 2
+entry_day["values"]=("-","01","02","03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29","30","31")
 entry_day.current(0)
-entry_day.pack()
+entry_day.grid(row=0, column=3)
+
+calen = Calendar(frame_s,)
+calen.bind("<<CalendarSelected>>",date_select_calender)
+calen.grid(row=4,column=1,pady=0)
+
+
 btn_add = tk.Button(frame_s,text="追加",command=add)
-btn_add.pack()
+btn_add.grid(row=5, column=1, pady=5)
 
 #リスト一覧表示
 frame_list = ttk.Frame(all_frame, padding=10)
