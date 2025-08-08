@@ -10,8 +10,7 @@ root = tk.Tk()
 #<----↓----初起動時の動作---↓---＞
 def initialize_database():
     """アプリケーション起動時にデータベース接続を確立し、テーブルがなければ作成する"""
-    global conn
-    global tree
+    global conn,tree
     conn = sqlite3.connect("todo.db")
     cursor = conn.cursor()
     cursor.execute('''
@@ -24,20 +23,30 @@ def initialize_database():
         ''')
     conn.commit()
 #<---↑----初起動時の動作----↑---＞
+0
 
 #<----↓----追加の動作---↓---＞
 def add_menu():
     frame_s.pack()
     frame_list.pack_forget()
     frame_delete.pack_forget()
+    t_year = datetime.datetime.year
+    t_month = datetime.datetime.month
+    t_day= datetime.datetime.day
+    entry_year.set(t_year)
+    entry_month.set(t_month)
+    entry_day.set(t_day)
 
 def date_select_calender(event):
     select_d_str=calen.get_date()
     print(select_d_str)
     select_y,select_m,select_d = select_d_str.split("/")
-    entry_year.set(select_y)
-    entry_month.set(select_m)
-    entry_day.set(select_d)
+    set_data(select_y,select_m,select_d)
+
+def set_data(y=datetime.date.today().year,m=datetime.date.today().month,d=datetime.date.today().day):
+    entry_year.set(y)
+    entry_month.set(m)
+    entry_day.set(d)
 
 def add():
     task=entry_sj.get().strip()
@@ -77,6 +86,7 @@ def display_list():
     frame_s.pack_forget()
     frame_delete.pack_forget()
     frame_list.pack(expand=True, fill='both')
+    set_data()
 
     sort()
 def sort():
@@ -134,7 +144,7 @@ all_frame = tk.Frame(root)
 all_frame.pack()
 #メニュー
 frame_m = tk.Frame(all_frame)
-frame_m.pack(pady=10)
+frame_m.pack()
 menu = tk.Label(frame_m,text="メニュー")
 menu.grid(row=0,column=0,padx=0,pady=0)
 
@@ -152,41 +162,43 @@ btn4.grid(row=1,column=3,padx=5,pady=10)
 
 #描画画面(メニューボタン押したら切り替わるように)
 
+#トップ画面（今日の日付と今日期限のタスクがあれば表示）
+
 #追加画面
 frame_s = ttk.Frame(all_frame,padding=10)
 
-sj = tk.Label(frame_s,text="内容")
-sj.grid(row=0, column=1, pady=5)
+sj = tk.Label(frame_s,text="内容",bg="pink")
+sj.grid(row=0, column=1)
 
 entry_sj = tk.Entry(frame_s)
 entry_sj["width"] = 40
-entry_sj.grid(row=1, column=1, pady=5)
+entry_sj.grid(row=1, column=1)
 
-date = tk.Label(frame_s,text="期限")
-date.grid(row=2, column=1, pady=5)
+date = tk.Label(frame_s,text="期限",bg="pink")
+date.grid(row=2, column=1)
 
 frame_daytime = ttk.Frame(frame_s,padding=10)
-frame_daytime.grid(row=3, column=1, pady=0)
+frame_daytime.grid(row=3, column=1)
 
 entry_year = ttk.Combobox(frame_daytime)
 entry_year_val=list(map(str,range(2025,3000)))
 entry_year_val.insert(0,"-")
 entry_year["width"] = 4
 entry_year["values"]=entry_year_val
-entry_year.current(0)
 entry_year.grid(row=0, column=1)
 
 entry_month = ttk.Combobox(frame_daytime)
 entry_month["width"] = 2
 entry_month["values"]=("-","01","02","03","04","05","06","07","08","09","10","11","12")
-entry_month.current(0)
 entry_month.grid(row=0, column=2)
 
 entry_day = ttk.Combobox(frame_daytime)
 entry_day["width"] = 2
 entry_day["values"]=("-","01","02","03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29","30","31")
-entry_day.current(0)
 entry_day.grid(row=0, column=3)
+
+today_b = tk.Button(frame_daytime,text="今日",command=set_data)
+today_b.grid(row=0, column=4)
 
 calen = Calendar(frame_s,)
 calen.bind("<<CalendarSelected>>",date_select_calender)
@@ -194,7 +206,7 @@ calen.grid(row=4,column=1,pady=0)
 
 
 btn_add = tk.Button(frame_s,text="追加",command=add)
-btn_add.grid(row=5, column=1, pady=5)
+btn_add.grid(row=5, column=1,pady=5)
 
 #リスト一覧表示
 frame_list = ttk.Frame(all_frame, padding=10)
