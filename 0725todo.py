@@ -4,6 +4,8 @@ import tkinter.ttk as ttk
 import tkinter.messagebox
 import sqlite3
 from tkcalendar import Calendar
+import requests as req
+import json
 
 root = tk.Tk()
 
@@ -22,21 +24,25 @@ def initialize_database():
             )
         ''')
     conn.commit()
+
 #<---↑----初起動時の動作----↑---＞
-0
+
 
 #<----↓----追加の動作---↓---＞
 def add_menu():
+    global kyou_task 
+    kyou_task.grid_forget() 
+    toggle_jork()
     frame_s.pack()
     frame_list.pack_forget()
     frame_delete.pack_forget()
-    t_year = datetime.datetime.year
-    t_month = datetime.datetime.month
-    t_day= datetime.datetime.day
+    t_year = datetime.date.today().year
+    t_month = datetime.date.today().month
+    t_day= datetime.date.today().day
     entry_year.set(t_year)
     entry_month.set(t_month)
     entry_day.set(t_day)
-
+   
 def date_select_calender(event):
     select_d_str=calen.get_date()
     print(select_d_str)
@@ -49,39 +55,102 @@ def set_data(y=datetime.date.today().year,m=datetime.date.today().month,d=dateti
     entry_day.set(d)
 
 def add():
+    toggle_jork()
     task=entry_sj.get().strip()
-    year=entry_year.get().strip()
-    month=entry_month.get().strip()
-    day=entry_day.get().strip()
-    date=datetime.datetime.strptime(f"{year}/{month}/{day}",'%Y/%m/%d').date()
-    created_date=datetime.datetime.now().date()
-    if date<created_date:
-        tkinter.messagebox.showerror("日付の入力","期限の入力が不正です。")
+    if not task:
+        tkinter.messagebox.showerror("内容の入力","内容の入力がありません")
     else:
-        try:
-            conn.execute("INSERT INTO todo (task,due_date,created_date) values(?,?,?)",(task, date.isoformat(), created_date.isoformat()))
-            conn.commit()
-        except:
-            if conn:
-                conn.rollback()
-            tkinter.messagebox.showerror("タスク追加失敗", "失敗しました")
+        year=entry_year.get().strip()
+        month=entry_month.get().strip()
+        day=entry_day.get().strip()
+        date=datetime.datetime.strptime(f"{year}/{month}/{day}",'%Y/%m/%d').date()
+        created_date=datetime.datetime.now().date()
+        if date<created_date:
+            tkinter.messagebox.showerror("日付の入力","期限の入力が不正です。")
         else:
-            entry_sj.delete(0, tk.END)
-            entry_year.delete(0, tk.END)
-            entry_month.set("01")
-            entry_day.set("01")
-            tkinter.messagebox.showinfo("タスク追加成功", "成功しました")
+            try:
+                conn.execute("INSERT INTO todo (task,due_date,created_date) values(?,?,?)",(task, date.isoformat(), created_date.isoformat()))
+                conn.commit()
+            except:
+                if conn:
+                    conn.rollback()
+                tkinter.messagebox.showerror("タスク追加失敗", "失敗しました")
+            else:
+                entry_sj.delete(0, tk.END)
+                entry_year.delete(0, tk.END)
+                entry_month.set("01")
+                entry_day.set("01")
+                tkinter.messagebox.showinfo("タスク追加成功", "成功しました")
 #<---↑----追加の動作----↑---＞
 
 #<----↓---トップの動き----↓---＞
 def top_menu():
+    toggle_jork()
+    update_top_screen()
     frame_s.pack_forget()
     frame_delete.pack_forget()
     frame_list.pack_forget()
+
+def count_todays_tasks():
+    # global kyou_task
+    # kyou_task.pack_forget()
+    conn = sqlite3.connect("todo.db")
+    cursor = conn.cursor()
+    today = datetime.date.today().isoformat()
+    try:
+        query = "SELECT COUNT(*) FROM todo WHERE due_date = ?"
+        cursor.execute(query, (today,))
+        count = cursor.fetchone()[0]
+        kyou_task.config(text=f"今日のタスクは{count}件です")
+        kyou_task.grid(row=3, column=0)
+    except sqlite3.Error as e:
+        tkinter.messagebox.showinfo("データベースエラー","データベースエラー: {e}")
+        return 0
+    finally:
+        # データベース接続を閉じる
+        if conn:
+            conn.close()
+    toggle_jork()
+def update_top_screen():
+    """トップ画面のタスク数とジョークを更新する"""
+    count = count_todays_tasks()
+    if count is not None:
+        kyou_task.config(text=f"今日のタスクは{count}件です")
+    toggle_jork()
+    kyou_task.grid(row=3, column=0)
+
+def jork_setup():
+    global jork_set,jork_punch
+    
+    url_2=f"https://official-joke-api.appspot.com/random_joke"
+    result_2=req.get(url_2)
+    result_2=result_2.text
+    jork=json.loads(result_2)
+    furi = jork["setup"]
+    jork_set = tk.Variable()
+    jork_set.set(furi)
+
+    oti=jork["punchline"]
+    jork_punch=tk.Variable()
+    jork_punch.set(f"{oti}...haha...")
+
+def toggle_jork():
+    global kensa
+    if kensa == False:
+        jor.config(textvariable=jork_punch,fg="red")
+        kensa = True
+    else:
+        jork_setup()
+        jor.config(textvariable=jork_set,fg="black")
+        kensa = False
+        
 #<------↑トップの動き↑------＞
 
 #<---↓一覧表示の動き↓---＞
 def display_list():
+    global kyou_task # この行を追加
+    kyou_task.grid_forget() 
+    toggle_jork()
     frame_list.pack_forget()
     frame_s.pack_forget()
     frame_delete.pack_forget()
@@ -116,10 +185,13 @@ def sort():
 # def delete():
     
 def delete_menu():
+    global kyou_task # この行を追加
+    kyou_task.grid_forget()
     display_list()
     frame_delete.pack()
     
 def delete():
+    toggle_jork()
     select_i = tree.selection()
     for i in select_i:
         record_id = i
@@ -130,10 +202,13 @@ def delete():
         tkinter.messagebox.showerror("削除の失敗", f"削除できなかった")
         conn.rollback()
     else:
-        tkinter.messagebox.showerror("削除成功", f"削除しました")
+        tkinter.messagebox.showinfo("削除成功", f"削除しました")
         display_list()
         frame_delete.pack()
 #<↑--削除---↑>
+kensa=False
+jork_setup()
+# count_todays_tasks()
 
 #<---↓---見栄え---↓--->
 root.title("python製 ToDoリスト")
@@ -162,7 +237,16 @@ btn4.grid(row=1,column=3,padx=5,pady=10)
 
 #描画画面(メニューボタン押したら切り替わるように)
 
-#トップ画面（今日の日付と今日期限のタスクがあれば表示）
+#トップ画面（今日の日付と今日期限のタスクがあれば表示
+frame_top = tk.Frame(all_frame)
+frame_top.pack()
+jor = tk.Label(frame_top,textvariable=jork_set,font=("Arial","8","italic"),fg="black")
+jor.grid(row=2,column=0)
+kyou_task = tk.Label(frame_top,text="")
+kyou_task.grid(row=3,column=0)
+
+
+
 
 #追加画面
 frame_s = ttk.Frame(all_frame,padding=10)
@@ -210,7 +294,6 @@ btn_add.grid(row=5, column=1,pady=5)
 
 #リスト一覧表示
 frame_list = ttk.Frame(all_frame, padding=10)
-
 serect_sort = ttk.Combobox(frame_list)
 serect_sort["values"] = ("---","期日が近い","期日が遠い")
 serect_sort.current(0)
@@ -236,12 +319,11 @@ frame_list.grid_columnconfigure(0,weight=1)
 
 #削除画面
 frame_delete = ttk.Frame(all_frame, padding=10)
-# entry_num = tk.Entry(frame_delete)
-# entry_num.grid(row=0, column=0, pady=0,sticky="e")
 del_btn = tk.Button(frame_delete,text=u"削除",command=delete)
 del_btn.grid(row=0, column=0, pady=0,sticky="e")
 """IDの情報自体はh画面には出てないけど持ってきてる、選択させて、その隠れたIDをもとにDBのほうはいじらせよう"""
 
 initialize_database()
+update_top_screen()
 root.mainloop()
 conn.close()
